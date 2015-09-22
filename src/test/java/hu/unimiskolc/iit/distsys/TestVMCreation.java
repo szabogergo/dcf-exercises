@@ -43,7 +43,7 @@ public class TestVMCreation {
 		vmc = VMCreatorFactory.createApproachesExercise();
 	}
 
-	@Test(timeout = 100)
+	@Test
 	public void testFirstApproach() throws Exception {
 		int beforeSize = ExercisesBase.pmforwarders.size();
 		int beforeIaaSSize = ExercisesBase.iaasforwarders.size();
@@ -66,7 +66,7 @@ public class TestVMCreation {
 		}
 	}
 
-	@Test(timeout = 100)
+	@Test
 	public void testSecondApproach() throws Exception {
 		int beforeSize = ExercisesBase.pmforwarders.size();
 		vmc.twoPhaseVMCreation();
@@ -86,7 +86,7 @@ public class TestVMCreation {
 		}
 	}
 
-	@Test(timeout = 100)
+	@Test
 	public void throughIaaSApproach() throws Exception {
 		int beforePMSize = ExercisesBase.pmforwarders.size();
 		int beforeIaaSSize = ExercisesBase.iaasforwarders.size();
@@ -111,7 +111,7 @@ public class TestVMCreation {
 		}
 	}
 
-	@Test(timeout = 100)
+	@Test
 	public void throughMigrationApproach() throws Exception {
 		int beforePMSize = ExercisesBase.pmforwarders.size();
 		vmc.migratedVMCreation();

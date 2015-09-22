@@ -24,11 +24,10 @@
 package hu.unimiskolc.iit.distsys;
 
 public class VMCreatorFactory {
-	public static VMCreationApproaches createApproachesExercise()
-			throws ClassNotFoundException, InstantiationException,
-			IllegalAccessException {
-		return (VMCreationApproaches) Class.forName(
-				System.getProperty("hu.unimiskolc.iit.distsys.VMC"))
-				.newInstance();
+	public static VMCreationApproaches createApproachesExercise() throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+		
+		System.setProperty("hu.unimiskolc.iit.distsys.VMC", "hu.unimiskolc.iit.distsys.VMC");
+		
+		return (VMCreationApproaches) Class.forName(System.getProperty("hu.unimiskolc.iit.distsys.VMC")).newInstance();
 	}
 }
