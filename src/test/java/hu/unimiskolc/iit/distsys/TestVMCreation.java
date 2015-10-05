@@ -27,6 +27,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.unimiskolc.iit.distsys.forwarders.IaaSForwarder;
 import hu.unimiskolc.iit.distsys.forwarders.PMForwarder;
+import hu.unimiskolc.iit.distsys.interfaces.VMCreationApproaches;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,7 +41,7 @@ public class TestVMCreation {
 			InstantiationException, IllegalAccessException {
 		Timed.resetTimed();
 		ExercisesBase.reset();
-		vmc = VMCreatorFactory.createApproachesExercise();
+		vmc = TestCreatorFactory.createApproachesExercise();
 	}
 
 	@Test
@@ -93,21 +94,19 @@ public class TestVMCreation {
 		vmc.indirectVMCreation();
 		int afterPMSize = ExercisesBase.pmforwarders.size();
 		int afterIaaSSize = ExercisesBase.iaasforwarders.size();
-		Assert.assertEquals("Should have one more PMs created",
-				beforePMSize + 1, afterPMSize);
-		Assert.assertEquals("Should have one an extra IaaSs created",
-				beforeIaaSSize + 1, afterIaaSSize);
+		
+		Assert.assertEquals("Should have one more PMs created", beforePMSize + 1, afterPMSize);
+		Assert.assertEquals("Should have one an extra IaaSs created", beforeIaaSSize + 1, afterIaaSSize);
+		
 		PMForwarder analysedPM = ExercisesBase.pmforwarders.get(beforePMSize);
 		IaaSForwarder iaas = ExercisesBase.iaasforwarders.get(beforeIaaSSize);
-		Assert.assertEquals("Should have the PM registered to the IaaS",
-				analysedPM, iaas.machines.get(0));
-		Assert.assertEquals("Should have no other PM registered to the IaaS",
-				1, iaas.machines.size());
-		Assert.assertTrue("Should have asked for the VMs through the IaaS",
-				!analysedPM.isReqVMCalled() && iaas.isReqVMcalled());
+		
+		Assert.assertEquals("Should have the PM registered to the IaaS", analysedPM, iaas.machines.get(0));
+		Assert.assertEquals("Should have no other PM registered to the IaaS", 1, iaas.machines.size());
+		Assert.assertTrue("Should have asked for the VMs through the IaaS", !analysedPM.isReqVMCalled() && iaas.isReqVMcalled());
+		
 		for (VirtualMachine vm : iaas.listVMs()) {
-			Assert.assertEquals("Both VMs should be running by now",
-					VirtualMachine.State.RUNNING, vm.getState());
+			Assert.assertEquals("Both VMs should be running by now", VirtualMachine.State.RUNNING, vm.getState());
 		}
 	}
 
