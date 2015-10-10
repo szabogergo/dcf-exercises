@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine.ResourceAllocation;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.ConstantConstraints;
@@ -22,26 +23,63 @@ public class PMFiller implements FillInAllPMs{
 	public void filler(IaaSService iaas, int vmCount) {
 		
 		try{					
-			VirtualAppliance va = new VirtualAppliance("VirtualAppliance", 10, 0, false,100000000l);
-			ResourceConstraints rc = new ConstantConstraints(0.001, 10.0, 1248);
-			//ResourceConstraints rc = new AlterableResourceConstraints(iaas.machines.get(0).getCapacities().getRequiredCPUs()-100, iaas.machines.get(0).getCapacities().getRequiredProcessingPower()-120, iaas.machines.get(0).getCapacities().getRequiredMemory()-11511);
+			VirtualAppliance va = (VirtualAppliance) iaas.repositories.get(0).lookup("mainVA");			
 			
-			Repository repo = ExercisesBase.getNewRepository(1);
+			Repository repo;
+			ResourceConstraints rc;
+			
+			if (!iaas.repositories.isEmpty())
+				repo = iaas.repositories.get(0);
+			else
+				repo = ExercisesBase.getNewRepository(1);
+			
 			repo.registerObject(va);
-			VirtualMachine[] vms = iaas.requestVM(va, rc, repo, 100);
 			
+			// -------------------------------------------------------------------------------------
+			
+			VirtualMachine[] vms = new VirtualMachine[100];			
+			
+			double cpuCoreResourceSum;
+			double cpuFreqResourceSum;
+			 
+			for (int i=0, iterator=0; i<10; i++){	
+			
+				cpuCoreResourceSum = iaas.machines.get(i).freeCapacities.getRequiredCPUs() / 10;
+				cpuFreqResourceSum = iaas.machines.get(i).freeCapacities.getRequiredProcessingPower() / 10;
+								
+				System.out.println(i+". PM -> Core: "+cpuCoreResourceSum+", Freq:"+cpuFreqResourceSum);
+				
+				for (int j=0; j<10; j++){					
+					rc = new ConstantConstraints(cpuCoreResourceSum/10.0, cpuFreqResourceSum/10.0, 1);					
+					vms[iterator] = iaas.requestVM(va, rc, repo, 1)[0];					
+					iterator++;
+					
+				}
+				
+			}	
+						
 			Timed.simulateUntilLastEvent();
+						
+			// -------------------------------------------------------------------------------------
+						
+			System.out.println();
+			System.out.println("Physical machines' state: ");
+			System.out.println("*******************************************");
+			
+			for (int i=0; i<10; i++){
+				System.out.println(i+".machine - State: "+ iaas.machines.get(i).getState() + ", Available capacity: " + iaas.machines.get(i).availableCapacities + ", Free capacity: " + iaas.machines.get(i).freeCapacities);				
+			}						
+			
+			System.out.println();
+			System.out.println("   ---");
+			System.out.println();
+			
+			System.out.println("Virtual machines' state: ");
+			System.out.println("*******************************************");
 			
 			for (int i=0; i<100; i++){
-				System.out.println(vms[i].getState());				
+				System.out.println(i+".machine - State: "+vms[i].getState());				
 			}			
-			
-			/*
-			for (int i=0; i<10; i++){
-				if (iaas.machines.get(i).freeCapacities.getRequiredCPUs() != 0)	
-					
-			}
-			*/
 			
 		}
 		catch(Exception ex)
