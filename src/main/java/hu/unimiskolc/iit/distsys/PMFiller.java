@@ -35,8 +35,8 @@ public class PMFiller implements FillInAllPMs{
 			
 			repo.registerObject(va);
 			
-					
-			
+			// -------------------------------------------------------------------------------------
+			// utilizator v1
 			// -------------------------------------------------------------------------------------
 			/*
 			VirtualMachine[] vms = new VirtualMachine[100];	
@@ -58,8 +58,11 @@ public class PMFiller implements FillInAllPMs{
 				}
 			}	
 			*/
-			// -------------------------------------------------------------------------------------
 			
+			// -------------------------------------------------------------------------------------
+			// utilizator v2
+			// -------------------------------------------------------------------------------------
+			/*
 			double cpuCoreResourceSum = 0.0;
 			double cpuFreqResourceSum = 0.0;
 			double maxCpuCore = iaas.machines.get(0).freeCapacities.getRequiredCPUs();
@@ -103,6 +106,73 @@ public class PMFiller implements FillInAllPMs{
 				}				
 				
 				vms[i] = iaas.requestVM(va, rc, repo, 1)[0];
+			}
+			*/
+			
+			// -------------------------------------------------------------------------------------
+			// utilizator v3
+			// -------------------------------------------------------------------------------------
+			
+			double cpuCoreResourceSum = 0.0;
+			double cpuFreqResourceSum = 0.0;			
+			
+			for (int i=0; i<10; i++){
+				
+				cpuCoreResourceSum += iaas.machines.get(i).freeCapacities.getRequiredCPUs();
+				cpuFreqResourceSum += iaas.machines.get(i).freeCapacities.getRequiredProcessingPower();
+				
+				System.out.println(i+". PM -> Core: "+iaas.machines.get(i).freeCapacities.getRequiredCPUs()+", Freq:"+iaas.machines.get(i).freeCapacities.getRequiredProcessingPower());
+			}
+			
+			System.out.println();
+			System.out.println("Summary -> Core: "+cpuCoreResourceSum +", Freq: "+cpuFreqResourceSum);
+			System.out.println();
+						
+			VirtualMachine[] vms = new VirtualMachine[vmCount];
+			
+			for (int i=0; i<10; i++){
+					
+				double reqCpu = iaas.machines.get(i).freeCapacities.getRequiredCPUs();
+				double reqFreq = iaas.machines.get(i).freeCapacities.getRequiredProcessingPower();
+				
+				if (i<9){										
+					rc = new AlterableResourceConstraints(reqCpu, reqFreq, 1);
+					vms[i] = iaas.requestVM(va, rc, repo, 1)[0];
+					
+					cpuCoreResourceSum -= reqCpu;
+					cpuFreqResourceSum -= reqFreq;
+					
+					System.out.println(i +". iteration -> Core: "+cpuCoreResourceSum+", freq: "+cpuFreqResourceSum);
+					
+				}
+				else{
+					/*
+					double coreSubtrPart = cpuCoreResourceSum/91;
+					double freqSubtrPart = cpuFreqResourceSum/91;
+					
+					System.out.println();
+					System.out.println("corepart: "+coreSubtrPart+", freqpart: "+freqSubtrPart);
+					System.out.println();
+					*/
+					for (int j=9; j<100; j++){
+						
+						double coreSubtrPart = cpuCoreResourceSum/(100-j);
+						double freqSubtrPart = cpuFreqResourceSum/(100-j);						
+						
+						System.out.println("coreSubtrPart: "+coreSubtrPart+", freqSubtrPart: "+freqSubtrPart);
+						
+						rc = new AlterableResourceConstraints(coreSubtrPart, freqSubtrPart, 1);						
+						vms[j] = iaas.requestVM(va, rc, repo, 1)[0];
+						
+						cpuCoreResourceSum -= coreSubtrPart;
+						cpuFreqResourceSum -= freqSubtrPart;
+						
+						System.out.println(j +". iteration -> Core: "+cpuCoreResourceSum+", freq: "+cpuFreqResourceSum);
+						
+					}
+					
+				}				
+								
 			}
 			
 			// -------------------------------------------------------------------------------------
