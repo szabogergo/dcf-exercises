@@ -146,6 +146,7 @@ public class PMFiller implements FillInAllPMs{
 					
 				}
 				else{
+					
 					/*
 					double coreSubtrPart = cpuCoreResourceSum/91;
 					double freqSubtrPart = cpuFreqResourceSum/91;
@@ -154,6 +155,7 @@ public class PMFiller implements FillInAllPMs{
 					System.out.println("corepart: "+coreSubtrPart+", freqpart: "+freqSubtrPart);
 					System.out.println();
 					*/
+					
 					for (int j=9; j<100; j++){
 						
 						double coreSubtrPart = cpuCoreResourceSum/(100-j);
