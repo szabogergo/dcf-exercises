@@ -35,32 +35,79 @@ public class PMFiller implements FillInAllPMs{
 			
 			repo.registerObject(va);
 			
-			// -------------------------------------------------------------------------------------
+					
 			
-			VirtualMachine[] vms = new VirtualMachine[100];			
+			// -------------------------------------------------------------------------------------
+			/*
+			VirtualMachine[] vms = new VirtualMachine[100];	
 			
 			double cpuCoreResourceSum;
 			double cpuFreqResourceSum;
 			 
 			for (int i=0, iterator=0; i<10; i++){	
 			
-				cpuCoreResourceSum = iaas.machines.get(i).freeCapacities.getRequiredCPUs() / 10;
-				cpuFreqResourceSum = iaas.machines.get(i).freeCapacities.getRequiredProcessingPower() / 10;
+				cpuCoreResourceSum = iaas.machines.get(i).freeCapacities.getRequiredCPUs() / 10.0;
+				cpuFreqResourceSum = iaas.machines.get(i).freeCapacities.getRequiredProcessingPower() / 10.0;
 								
 				System.out.println(i+". PM -> Core: "+cpuCoreResourceSum+", Freq:"+cpuFreqResourceSum);
 				
 				for (int j=0; j<10; j++){					
 					rc = new ConstantConstraints(cpuCoreResourceSum/10.0, cpuFreqResourceSum/10.0, 1);					
 					vms[iterator] = iaas.requestVM(va, rc, repo, 1)[0];					
-					iterator++;
-					
+					iterator++;	
 				}
-				
 			}	
-						
-			Timed.simulateUntilLastEvent();
-						
+			*/
 			// -------------------------------------------------------------------------------------
+			
+			double cpuCoreResourceSum = 0.0;
+			double cpuFreqResourceSum = 0.0;
+			double maxCpuCore = iaas.machines.get(0).freeCapacities.getRequiredCPUs();
+			
+			for (int i=0; i<10; i++){
+				
+				cpuCoreResourceSum += iaas.machines.get(i).freeCapacities.getRequiredCPUs();
+				cpuFreqResourceSum += iaas.machines.get(i).freeCapacities.getRequiredProcessingPower();
+				
+				if (iaas.machines.get(i).freeCapacities.getRequiredCPUs() > maxCpuCore)
+					maxCpuCore = iaas.machines.get(i).freeCapacities.getRequiredCPUs();
+				
+				System.out.println(i+". PM -> Core: "+iaas.machines.get(i).freeCapacities.getRequiredCPUs()+", Freq:"+iaas.machines.get(i).freeCapacities.getRequiredProcessingPower());
+			}
+			
+			System.out.println();
+			System.out.println("Core: "+cpuCoreResourceSum +", Freq: "+cpuFreqResourceSum+", maxCpuCore: "+maxCpuCore);
+						
+			VirtualMachine[] vms = new VirtualMachine[vmCount];
+			
+			for (int i=100-vmCount; i<100 ;i++){
+				
+				if ((cpuCoreResourceSum/i) > maxCpuCore){
+					
+					double actualPart = cpuCoreResourceSum/(100-i);
+					System.out.println();
+					System.out.println(i+". iteration, value: "+actualPart+" remaining: "+cpuCoreResourceSum);
+					
+					rc = new AlterableResourceConstraints(maxCpuCore, cpuFreqResourceSum/(100-i), 1);
+					cpuCoreResourceSum -= maxCpuCore;
+					cpuFreqResourceSum -= (cpuFreqResourceSum/(100-i));
+				}
+				else{
+					double actualPart = cpuCoreResourceSum/(100-i);
+					System.out.println();
+					System.out.println(i+". iteration, value: "+actualPart+" remaining: "+cpuCoreResourceSum);
+					
+					rc = new AlterableResourceConstraints(cpuCoreResourceSum/(100-i), cpuFreqResourceSum/(100-i), 1);
+					cpuCoreResourceSum -= (cpuCoreResourceSum/(100-i));
+					cpuFreqResourceSum -= (cpuFreqResourceSum/(100-i));
+				}				
+				
+				vms[i] = iaas.requestVM(va, rc, repo, 1)[0];
+			}
+			
+			// -------------------------------------------------------------------------------------
+			
+			Timed.simulateUntilLastEvent();
 						
 			System.out.println();
 			System.out.println("Physical machines' state: ");
