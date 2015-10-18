@@ -2,6 +2,7 @@ package hu.unimiskolc.iit.distsys;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.MonitorConsumption;
@@ -24,6 +25,7 @@ import hu.unimiskolc.iit.distsys.ComplexDCFJob;
 public class RRJSched implements BasicJobScheduler{
 
 	private ArrayList<VirtualMachine> vm = new ArrayList<VirtualMachine>();
+	private ArrayList<MyMonitor> monitor = new ArrayList<MyMonitor>();
 	IaaSService iaas;
 	private int jobCounter = 1;
 
@@ -64,7 +66,7 @@ public class RRJSched implements BasicJobScheduler{
 			this.iaas = iaas;
 			VirtualMachine tempvm = this.createNewVM(iaas);
 			vm.add(tempvm);
-			new MyMonitor((ResourceSpreader) vm.get(vm.size()-1));
+			monitor.add(new MyMonitor((ResourceSpreader) vm.get(vm.size()-1)));
 		}
 		catch (Exception e){
 			e.printStackTrace();
@@ -78,19 +80,44 @@ public class RRJSched implements BasicJobScheduler{
 			final ComplexDCFJob myJob = (ComplexDCFJob) j;
 			
 			// list jobs
-			System.out.println(myJob.toString());
+			//System.out.println(myJob.toString());
 			// run jobs
 			myJob.startNowOnVM(vm.get(0), new ConsumptionEvent(){
 
 				@Override
 				public void conComplete() {
-					System.out.println("Job completed -> ID: "+myJob.getId());										
+					System.out.println();
+					System.out.println("Job completed -> ID: "+myJob.getId());
+					System.out.println("Execution time: "+myJob.getExectimeSecs()+" ms");
+					System.out.println("Real execution time: "+(myJob.getRealstopTime() - myJob.getRealqueueTime())+" ms");
+					System.out.println("Job counter: "+jobCounter);
 					//myJob.nprocs
+					
 					for (int i=0; i<vm.size(); i++){
-						System.out.println(vm.get(i).getState());	
+						System.out.println(i+". VM state: "+vm.get(i).getState());	
 					}
 					
 					jobCounter++;
+					
+					if (jobCounter == 1000){
+						for (MyMonitor mm : monitor){
+							mm.stopMonitor(new ConsumptionEvent() {
+								
+								@Override
+								public void conComplete() {
+									// TODO Auto-generated method stub									
+								}
+								
+								@Override
+								public void conCancelled(ResourceConsumption problematic) {
+									// TODO Auto-generated method stub
+								}
+							});
+						}
+						
+						System.out.println();
+						System.out.println("Terminating...");
+					}	
 				}
 
 				@Override
