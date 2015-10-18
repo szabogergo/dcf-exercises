@@ -31,6 +31,8 @@ public class RRJSched implements BasicJobScheduler{
 
 	class MyMonitor extends MonitorConsumption{
 		
+		public double diff = 0.0;
+		
 		public MyMonitor(ResourceSpreader toMonitor) {
 			super(toMonitor);						
 		}
@@ -40,7 +42,7 @@ public class RRJSched implements BasicJobScheduler{
 		}
 	}
 	
-	public VirtualMachine createNewVM(IaaSService iaas) throws VMManagementException, NetworkException{
+	public static VirtualMachine createNewVM(IaaSService iaas) throws VMManagementException, NetworkException{
 		
 		VirtualAppliance va = (VirtualAppliance) iaas.repositories.get(0).lookup("mainVA");			
 		
@@ -63,9 +65,8 @@ public class RRJSched implements BasicJobScheduler{
 	@Override
 	public void setupIaaS(IaaSService iaas) {
 		try{
-			this.iaas = iaas;
-			VirtualMachine tempvm = this.createNewVM(iaas);
-			vm.add(tempvm);
+			this.iaas = iaas;			
+			vm.add(RRJSched.createNewVM(iaas));
 			monitor.add(new MyMonitor((ResourceSpreader) vm.get(vm.size()-1)));
 		}
 		catch (Exception e){
@@ -79,22 +80,39 @@ public class RRJSched implements BasicJobScheduler{
 			
 			final ComplexDCFJob myJob = (ComplexDCFJob) j;
 			
-			// list jobs
-			//System.out.println(myJob.toString());
-			// run jobs
 			myJob.startNowOnVM(vm.get(0), new ConsumptionEvent(){
 
 				@Override
 				public void conComplete() {
+					
 					System.out.println();
 					System.out.println("Job completed -> ID: "+myJob.getId());
 					System.out.println("Execution time: "+myJob.getExectimeSecs()+" ms");
 					System.out.println("Real execution time: "+(myJob.getRealstopTime() - myJob.getRealqueueTime())+" ms");
 					System.out.println("Job counter: "+jobCounter);
-					//myJob.nprocs
 					
 					for (int i=0; i<vm.size(); i++){
-						System.out.println(i+". VM state: "+vm.get(i).getState());	
+						System.out.println(i+". VM state: "+vm.get(i).getState());							
+					}
+					
+					for (MyMonitor mm : monitor){
+						
+						System.out.println("SubSecondProcessing: "+mm.getSubSecondProcessing());
+						mm.diff = Math.abs(mm.getSubSecondProcessing() - mm.diff);
+						
+						System.out.println("Processing difference: "+mm.diff);						
+						
+						/*
+						if (mm.diff < 100000){
+							try{
+								vm.add(RRJSched.createNewVM(iaas));
+								monitor.add(new MyMonitor((ResourceSpreader) vm.get(vm.size()-1)));
+							}
+							catch (Exception e){
+								e.printStackTrace();
+							}
+						}
+						*/
 					}
 					
 					jobCounter++;
@@ -115,9 +133,11 @@ public class RRJSched implements BasicJobScheduler{
 							});
 						}
 						
-						System.out.println();
+						System.out.println();	
 						System.out.println("Terminating...");
-					}	
+					}
+					
+					
 				}
 
 				@Override
@@ -132,8 +152,6 @@ public class RRJSched implements BasicJobScheduler{
 		catch(Exception e){
 			e.printStackTrace();
 		}
-		
-		
 			
 	}
 
