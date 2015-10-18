@@ -24,20 +24,9 @@ import hu.unimiskolc.iit.distsys.ComplexDCFJob;
 public class RRJSched implements BasicJobScheduler{
 
 	private ArrayList<VirtualMachine> vm = new ArrayList<VirtualMachine>();
-	protected IaaSService iaas;
+	IaaSService iaas;
 	private int jobCounter = 1;
-	
-	public RRJSched(){
-		try{
-			vm.add(this.createNewVM(iaas));
-			new MyMonitor((ResourceSpreader) vm.get(vm.size()-1));
-			Timed.simulateUntilLastEvent();
-		}
-		catch(Exception e){
-			e.printStackTrace();
-		}
-	}
-	 
+
 	class MyMonitor extends MonitorConsumption{
 		
 		public MyMonitor(ResourceSpreader toMonitor) {
@@ -71,7 +60,15 @@ public class RRJSched implements BasicJobScheduler{
 
 	@Override
 	public void setupIaaS(IaaSService iaas) {
-		this.iaas = iaas;
+		try{
+			this.iaas = iaas;
+			VirtualMachine tempvm = this.createNewVM(iaas);
+			vm.add(tempvm);
+			new MyMonitor((ResourceSpreader) vm.get(vm.size()-1));
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
 	}
 		
 	@Override
@@ -87,8 +84,7 @@ public class RRJSched implements BasicJobScheduler{
 
 				@Override
 				public void conComplete() {
-					System.out.println("Job completed -> ID: "+myJob.getId());					
-					//checkUtilization();
+					System.out.println("Job completed -> ID: "+myJob.getId());										
 					//myJob.nprocs
 					for (int i=0; i<vm.size(); i++){
 						System.out.println(vm.get(i).getState());	
@@ -103,7 +99,7 @@ public class RRJSched implements BasicJobScheduler{
 				}
 				
 			});
-			//Timed.simulateUntilLastEvent();
+			
 			
 		}
 		catch(Exception e){
