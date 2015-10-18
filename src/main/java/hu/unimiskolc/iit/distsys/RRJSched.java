@@ -7,6 +7,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.MonitorConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.helpers.job.Job;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.ResourceConstraints;
@@ -14,6 +15,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.ResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceSpreader;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption.ConsumptionEvent;
+import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.unimiskolc.iit.distsys.interfaces.BasicJobScheduler;
@@ -21,8 +23,20 @@ import hu.unimiskolc.iit.distsys.ComplexDCFJob;
 
 public class RRJSched implements BasicJobScheduler{
 
-	private ArrayList<VirtualMachine> vm;
+	private ArrayList<VirtualMachine> vm = new ArrayList<VirtualMachine>();
+	protected IaaSService iaas;
 	private int jobCounter = 1;
+	
+	public RRJSched(){
+		try{
+			vm.add(this.createNewVM(iaas));
+			new MyMonitor((ResourceSpreader) vm.get(vm.size()-1));
+			Timed.simulateUntilLastEvent();
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+	}
 	 
 	class MyMonitor extends MonitorConsumption{
 		
@@ -35,37 +49,31 @@ public class RRJSched implements BasicJobScheduler{
 		}
 	}
 	
+	public VirtualMachine createNewVM(IaaSService iaas) throws VMManagementException, NetworkException{
+		
+		VirtualAppliance va = (VirtualAppliance) iaas.repositories.get(0).lookup("mainVA");			
+		
+		Repository repo;
+		repo = iaas.repositories.get(0);
+		
+		ResourceConstraints rc;
+		double core = iaas.machines.get(0).freeCapacities.getRequiredCPUs();
+		double freq = iaas.machines.get(0).freeCapacities.getRequiredProcessingPower();
+		long mem = iaas.machines.get(0).freeCapacities.getRequiredMemory();
+		rc = new AlterableResourceConstraints(core, freq, mem);
+		
+		return iaas.requestVM(va, rc, repo, 1)[0];
+	}
+	
 	@Override
 	public void setupVMset(Collection<VirtualMachine> vms) {
 	}
 
 	@Override
 	public void setupIaaS(IaaSService iaas) {
-		try{
-			VirtualAppliance va = (VirtualAppliance) iaas.repositories.get(0).lookup("mainVA");			
-			
-			Repository repo;
-			repo = iaas.repositories.get(0);
-			
-			ResourceConstraints rc;
-			double core = iaas.machines.get(0).freeCapacities.getRequiredCPUs();
-			double freq = iaas.machines.get(0).freeCapacities.getRequiredProcessingPower();
-			long mem = iaas.machines.get(0).freeCapacities.getRequiredMemory();
-			rc = new AlterableResourceConstraints(core, freq, mem);
-			
-			vm.add(iaas.requestVM(va, rc, repo, 1)[0]);
-			int lastVM = vm.size()-1;
-			new MyMonitor((ResourceSpreader) vm.get(lastVM));
-			
-			Timed.simulateUntilLastEvent();
-		}
-		catch(Exception e){
-			e.printStackTrace();
-		}
+		this.iaas = iaas;
 	}
 		
-	
-	
 	@Override
 	public void handleJobRequestArrival(Job j) {
 		try{
@@ -95,6 +103,7 @@ public class RRJSched implements BasicJobScheduler{
 				}
 				
 			});
+			//Timed.simulateUntilLastEvent();
 			
 		}
 		catch(Exception e){
