@@ -28,7 +28,6 @@ public class RRJSched implements BasicJobScheduler{
 	private ArrayList<MyMonitor> monitor = new ArrayList<MyMonitor>();
 	IaaSService iaas;
 	private int jobCounter = 1;
-	private String currentRunningJobID = new String();
 
 	class MyMonitor extends MonitorConsumption{
 		
@@ -80,9 +79,6 @@ public class RRJSched implements BasicJobScheduler{
 		try{
 			
 			final ComplexDCFJob myJob = (ComplexDCFJob) j;
-			final ComplexDCFJob myJobCopy = new ComplexDCFJob(myJob);
-			
-			System.out.println(myJob.toString());
 			
 			myJob.startNowOnVM(vm.get(0), new ConsumptionEvent(){
 
@@ -106,7 +102,7 @@ public class RRJSched implements BasicJobScheduler{
 						
 						System.out.println("Processing difference: "+mm.diff);						
 						
-						/*
+						
 						if (mm.diff < 100000){
 							try{
 								vm.add(RRJSched.createNewVM(iaas));
@@ -116,12 +112,12 @@ public class RRJSched implements BasicJobScheduler{
 								e.printStackTrace();
 							}
 						}
-						*/
+						
 					}
 					
 					jobCounter++;
 					
-					if (jobCounter == 98){
+					if (jobCounter == 1000){
 						for (MyMonitor mm : monitor){
 							mm.stopMonitor(new ConsumptionEvent() {
 								
@@ -146,29 +142,7 @@ public class RRJSched implements BasicJobScheduler{
 
 				@Override
 				public void conCancelled(ResourceConsumption problematic) {					
-					try{
-						currentRunningJobID = new String(myJob.getId());
-						System.out.println("cancelled job: "+currentRunningJobID);
-						vm.add(RRJSched.createNewVM(iaas));
-						monitor.add(new MyMonitor((ResourceSpreader) vm.get(vm.size()-1)));
-						myJobCopy.startNowOnVM(vm.get(vm.size()-1), new ConsumptionEvent() {
-							
-							@Override
-							public void conComplete() {
-								// TODO Auto-generated method stub
-								
-							}
-							
-							@Override
-							public void conCancelled(ResourceConsumption problematic) {
-								// TODO Auto-generated method stub
-								
-							}
-						});
-					}
-					catch (Exception e){
-						e.printStackTrace();
-					}
+					
 				}
 				
 			});
