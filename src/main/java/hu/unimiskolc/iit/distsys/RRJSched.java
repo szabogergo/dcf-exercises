@@ -14,6 +14,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.unimiskolc.iit.distsys.interfaces.BasicJobScheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption.ConsumptionEvent;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -24,7 +25,46 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 	private VirtualAppliance va;
 	private HashMap<VirtualMachine, Job> vmsWithPurpose = new HashMap<VirtualMachine, Job>();
 	private HashMap<VirtualMachine, DeferredEvent> vmPool = new HashMap<VirtualMachine, DeferredEvent>();
-	private int counter = 0;
+	private int jobCounter = 0;
+	private int counter75 = 0; 
+	private int counter90 = 0;
+	private int counter95 = 0;
+	private ArrayList<Integer> array75 = new ArrayList<Integer>();
+	private ArrayList<Integer> array90 = new ArrayList<Integer>();
+	private ArrayList<Integer> array95 = new ArrayList<Integer>();
+			
+	
+	public double checkAvailability(ArrayList<Integer> pArray){
+		int count0 = 0;
+		int count1 = 0;
+		
+		for (int i=0; i<pArray.size(); i++){
+			if (pArray.get(i).intValue() == 0){
+				count0++;
+			}
+			else{
+				count1++;
+			}				
+		}
+		
+		return count0/count1;
+	}
+	
+	public String checkAvailabilityS(ArrayList<Integer> pArray){
+		int count0 = 0;
+		int count1 = 0;
+		
+		for (int i=0; i<pArray.size(); i++){
+			if (pArray.get(i).intValue() == 0){
+				count0++;
+			}
+			else{
+				count1++;
+			}				
+		}
+		
+		return "0-ák száma: "+count0+", 1-ek száma: "+count1;
+	}
 	
 	public void setupVMset(Collection<VirtualMachine> vms) {
 		
@@ -36,7 +76,7 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 		va = (VirtualAppliance) repo.contents().iterator().next();
 	}
 
-	public void handleJobRequestArrival(Job j) {
+	public void handleJobRequestArrival(Job j) {		
 		try {
 			ConstantConstraints cc = new ConstantConstraints(j.nprocs, ExercisesBase.minProcessingCap, ExercisesBase.minMem / j.nprocs);
 			for (VirtualMachine vm : vmPool.keySet()) {				
@@ -56,10 +96,39 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 		}
 	}
 
-	private void allocateVMforJob(final VirtualMachine vm, Job j) {
+	private void allocateVMforJob(final VirtualMachine vm, final Job j) {
 		try {
 			
 			final ComplexDCFJob myJob = new ComplexDCFJob((ComplexDCFJob)j);
+			
+			
+			if(jobCounter > 300){
+				System.out.println("----");
+				System.out.println("array75: "+checkAvailabilityS(array75));
+				System.out.println("array90: "+checkAvailabilityS(array90));
+				System.out.println("array95: "+checkAvailabilityS(array95));
+				System.out.println("----");
+			}
+			/*
+			if(jobCounter > 300){
+				System.out.println("----");
+				System.out.println("array75: "+array75.toString());
+				System.out.println("array90: "+array90.toString());
+				System.out.println("array95: "+array95.toString());
+				System.out.println("----");
+			}
+			*/
+			
+			jobCounter++;
+			
+			if (myJob.getAvailabilityLevel() == 0.95)
+				counter95++;
+						
+			if (myJob.getAvailabilityLevel() == 0.9)
+				counter90++;
+			
+			if (myJob.getAvailabilityLevel() == 0.75)
+				counter75++;		
 			
 			((ComplexDCFJob) j).startNowOnVM(vm, new ConsumptionEventAdapter() {
 				
@@ -78,16 +147,74 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 							}
 						}
 					});
-					System.out.println(counter+". job -> Original job has finished!");
-					counter++;
+					System.out.println(jobCounter+".job -> Original job has finished! -> group: "+((ComplexDCFJob)j).getAvailabilityLevel());
+					
+					
+					if(myJob.getAvailabilityLevel() == 0.75){
+						array75.add(1);
+					}
+						
+					if(myJob.getAvailabilityLevel() == 0.9){
+						array90.add(1);
+					}
+					
+					if(myJob.getAvailabilityLevel() == 0.95){
+						array95.add(1);					
+					}
+					
+					
+					
 				}
 				
 
 				@Override
 				public void conCancelled(ResourceConsumption problematic) {
-					System.out.println(counter+". job has crashed!");
-					counter++;
-					handleJobRequestArrival(myJob);
+					System.out.println("job has crashed!");				
+					
+					if (jobCounter<20){
+						if(myJob.getAvailabilityLevel() == 0.75){
+							array75.add(1);
+							handleJobRequestArrival(myJob);
+						}
+							
+						if(myJob.getAvailabilityLevel() == 0.9){
+							array90.add(1);
+							handleJobRequestArrival(myJob);
+						}
+						
+						if(myJob.getAvailabilityLevel() == 0.95){
+							array95.add(1);
+							handleJobRequestArrival(myJob);
+						}
+					}
+					else{
+						if(myJob.getAvailabilityLevel() == 0.75){
+							if (checkAvailability(array75) < 0.75){
+								array75.add(0);
+							}
+							else{
+								handleJobRequestArrival(myJob);							
+							}
+						}
+							
+						if(myJob.getAvailabilityLevel() == 0.9){
+							if (checkAvailability(array90) < 0.9){
+								array90.add(0);
+							}
+							else{
+								handleJobRequestArrival(myJob);
+							}
+						}
+						
+						if(myJob.getAvailabilityLevel() == 0.95){
+							if (checkAvailability(array95) < 0.95){
+								array95.add(0);
+							}
+							else{
+								handleJobRequestArrival(myJob);
+							}
+						}
+					}
 				}
 			});
 		} catch (Exception e) {
