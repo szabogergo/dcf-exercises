@@ -24,7 +24,8 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 	private VirtualAppliance va;
 	private HashMap<VirtualMachine, Job> vmsWithPurpose = new HashMap<VirtualMachine, Job>();
 	private HashMap<VirtualMachine, DeferredEvent> vmPool = new HashMap<VirtualMachine, DeferredEvent>();
-
+	private int counter = 0;
+	
 	public void setupVMset(Collection<VirtualMachine> vms) {
 		
 	}
@@ -38,10 +39,10 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 	public void handleJobRequestArrival(Job j) {
 		try {
 			ConstantConstraints cc = new ConstantConstraints(j.nprocs, ExercisesBase.minProcessingCap, ExercisesBase.minMem / j.nprocs);
-			for (VirtualMachine vm : vmPool.keySet()) {
-				if (vm.getResourceAllocation().allocated.getRequiredCPUs() >= j.nprocs) {
+			for (VirtualMachine vm : vmPool.keySet()) {				
+				if (vm.getState().toString() == "DESTROYED" || vm.getResourceAllocation().allocated.getRequiredCPUs() >= j.nprocs) {
 					vmPool.remove(vm).cancel();
-					allocateVMforJob(vm, j);
+					allocateVMforJob(vm, j);					
 					return;
 				}
 			}
@@ -77,29 +78,16 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 							}
 						}
 					});
-					System.out.println("Original job has finished!");
+					System.out.println(counter+". job -> Original job has finished!");
+					counter++;
 				}
 				
 
 				@Override
 				public void conCancelled(ResourceConsumption problematic) {
-					try {
-						myJob.startNowOnVM(vm, new ConsumptionEventAdapter(){
-							@Override
-							public void conComplete(){
-								System.out.println("Interrupted job has finished!");
-							}
-							
-							@Override
-							public void conCancelled(ResourceConsumption problematic){
-								
-							}
-						});
-					} 
-					catch (Exception e) {
-						e.printStackTrace();
-					}
-					
+					System.out.println(counter+". job has crashed!");
+					counter++;
+					handleJobRequestArrival(myJob);
 				}
 			});
 		} catch (Exception e) {
