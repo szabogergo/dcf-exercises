@@ -29,10 +29,11 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 	private int counter75 = 0; 
 	private int counter90 = 0;
 	private int counter95 = 0;
+	private int counter99 = 0;
 	private ArrayList<Integer> array75 = new ArrayList<Integer>();
 	private ArrayList<Integer> array90 = new ArrayList<Integer>();
 	private ArrayList<Integer> array95 = new ArrayList<Integer>();
-			
+	private ArrayList<Integer> array99 = new ArrayList<Integer>();
 	
 	public double checkAvailability(ArrayList<Integer> pArray){
 		int count0 = 0;
@@ -47,7 +48,7 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 			}				
 		}
 		
-		return count0/count1;
+		return (double)count1/(count1+count0);
 	}
 	
 	public String checkAvailabilityS(ArrayList<Integer> pArray){
@@ -101,15 +102,17 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 			
 			final ComplexDCFJob myJob = new ComplexDCFJob((ComplexDCFJob)j);
 			
-			
+			/*
 			if(jobCounter > 300){
 				System.out.println("----");
-				System.out.println("array75: "+checkAvailabilityS(array75));
-				System.out.println("array90: "+checkAvailabilityS(array90));
-				System.out.println("array95: "+checkAvailabilityS(array95));
+				System.out.println("array75: "+checkAvailabilityS(array75)+" rate: "+checkAvailability(array75));
+				System.out.println("array90: "+checkAvailabilityS(array90)+" rate: "+checkAvailability(array90));
+				System.out.println("array95: "+checkAvailabilityS(array95)+" rate: "+checkAvailability(array95));
+				System.out.println("array99: "+checkAvailabilityS(array99)+" rate: "+checkAvailability(array99));
 				System.out.println("----");
 			}
-			/*
+			
+			
 			if(jobCounter > 300){
 				System.out.println("----");
 				System.out.println("array75: "+array75.toString());
@@ -121,6 +124,9 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 			
 			jobCounter++;
 			
+			if (myJob.getAvailabilityLevel() == 0.99)
+				counter99++;	
+			
 			if (myJob.getAvailabilityLevel() == 0.95)
 				counter95++;
 						
@@ -129,6 +135,8 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 			
 			if (myJob.getAvailabilityLevel() == 0.75)
 				counter75++;		
+			
+			
 			
 			((ComplexDCFJob) j).startNowOnVM(vm, new ConsumptionEventAdapter() {
 				
@@ -162,7 +170,9 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 						array95.add(1);					
 					}
 					
-					
+					if(myJob.getAvailabilityLevel() == 0.99){
+						array99.add(1);					
+					}
 					
 				}
 				
@@ -171,7 +181,7 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 				public void conCancelled(ResourceConsumption problematic) {
 					System.out.println("job has crashed!");				
 					
-					if (jobCounter<20){
+					if (jobCounter<30){
 						if(myJob.getAvailabilityLevel() == 0.75){
 							array75.add(1);
 							handleJobRequestArrival(myJob);
@@ -186,10 +196,15 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 							array95.add(1);
 							handleJobRequestArrival(myJob);
 						}
+						
+						if(myJob.getAvailabilityLevel() == 0.99){
+							array95.add(1);
+							handleJobRequestArrival(myJob);
+						}
 					}
 					else{
 						if(myJob.getAvailabilityLevel() == 0.75){
-							if (checkAvailability(array75) < 0.75){
+							if (checkAvailability(array75) > 0.75){
 								array75.add(0);
 							}
 							else{
@@ -198,7 +213,7 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 						}
 							
 						if(myJob.getAvailabilityLevel() == 0.9){
-							if (checkAvailability(array90) < 0.9){
+							if (checkAvailability(array90) > 0.9){
 								array90.add(0);
 							}
 							else{
@@ -207,8 +222,17 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 						}
 						
 						if(myJob.getAvailabilityLevel() == 0.95){
-							if (checkAvailability(array95) < 0.95){
+							if (checkAvailability(array95) > 0.95){
 								array95.add(0);
+							}
+							else{
+								handleJobRequestArrival(myJob);
+							}
+						}
+						
+						if(myJob.getAvailabilityLevel() == 0.99){
+							if (checkAvailability(array95) > 0.99){
+								array99.add(0);
 							}
 							else{
 								handleJobRequestArrival(myJob);
@@ -217,11 +241,15 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 					}
 				}
 			});
-		} catch (Exception e) {
+			
+		} 
+		catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
-
+		
+		
+		
 	}
 
 	public void stateChanged(final VirtualMachine vm, State oldState, State newState) {

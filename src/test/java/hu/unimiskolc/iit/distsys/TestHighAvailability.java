@@ -268,8 +268,10 @@ public class TestHighAvailability {
 								+ " did not do so",
 						j.getExectimeSecs() * 3 > j.getRealstopTime() - j.getRealqueueTime());
 				// Should not allow too long queueing time
+				
 				Assert.assertTrue("Jobs should not queue more than a VM instantiation time but " + j + " did not do so",
 						j.getRealqueueTime() < vmCreationTime * 3);
+						
 			}
 		}
 
