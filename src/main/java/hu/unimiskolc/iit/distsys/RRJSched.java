@@ -51,22 +51,6 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 		return (double)count1/(count1+count0);
 	}
 	
-	public String checkAvailabilityS(ArrayList<Integer> pArray){
-		int count0 = 0;
-		int count1 = 0;
-		
-		for (int i=0; i<pArray.size(); i++){
-			if (pArray.get(i).intValue() == 0){
-				count0++;
-			}
-			else{
-				count1++;
-			}				
-		}
-		
-		return "0-ák száma: "+count0+", 1-ek száma: "+count1;
-	}
-	
 	public void setupVMset(Collection<VirtualMachine> vms) {
 		
 	}
@@ -78,8 +62,9 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 	}
 
 	public void handleJobRequestArrival(Job j) {		
-		try {
+		try {			
 			ConstantConstraints cc = new ConstantConstraints(j.nprocs, ExercisesBase.minProcessingCap, ExercisesBase.minMem / j.nprocs);
+			
 			for (VirtualMachine vm : vmPool.keySet()) {				
 				if (vm.getState().toString() == "DESTROYED" || vm.getResourceAllocation().allocated.getRequiredCPUs() >= j.nprocs) {
 					vmPool.remove(vm).cancel();
@@ -87,9 +72,11 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 					return;
 				}
 			}
+			
 			VirtualMachine vm = iaas.requestVM(va, cc, repo, 1)[0];
-			vm.subscribeStateChange(this);
+			vm.subscribeStateChange(this);			
 			vmsWithPurpose.put(vm, j);
+			
 		} 
 		catch (Exception e) {
 			e.printStackTrace();
@@ -101,27 +88,7 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 		try {
 			
 			final ComplexDCFJob myJob = new ComplexDCFJob((ComplexDCFJob)j);
-			
-			/*
-			if(jobCounter > 300){
-				System.out.println("----");
-				System.out.println("array75: "+checkAvailabilityS(array75)+" rate: "+checkAvailability(array75));
-				System.out.println("array90: "+checkAvailabilityS(array90)+" rate: "+checkAvailability(array90));
-				System.out.println("array95: "+checkAvailabilityS(array95)+" rate: "+checkAvailability(array95));
-				System.out.println("array99: "+checkAvailabilityS(array99)+" rate: "+checkAvailability(array99));
-				System.out.println("----");
-			}
-			
-			
-			if(jobCounter > 300){
-				System.out.println("----");
-				System.out.println("array75: "+array75.toString());
-				System.out.println("array90: "+array90.toString());
-				System.out.println("array95: "+array95.toString());
-				System.out.println("----");
-			}
-			*/
-			
+				
 			jobCounter++;
 			
 			if (myJob.getAvailabilityLevel() == 0.99)
@@ -135,8 +102,6 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 			
 			if (myJob.getAvailabilityLevel() == 0.75)
 				counter75++;		
-			
-			
 			
 			((ComplexDCFJob) j).startNowOnVM(vm, new ConsumptionEventAdapter() {
 				
@@ -155,6 +120,7 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 							}
 						}
 					});
+					
 					System.out.println(jobCounter+".job -> Original job has finished! -> group: "+((ComplexDCFJob)j).getAvailabilityLevel());
 					
 					
@@ -172,10 +138,8 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 					
 					if(myJob.getAvailabilityLevel() == 0.99){
 						array99.add(1);					
-					}
-					
+					}	
 				}
-				
 
 				@Override
 				public void conCancelled(ResourceConsumption problematic) {
@@ -247,9 +211,6 @@ public class RRJSched implements BasicJobScheduler, VirtualMachine.StateChange {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
-		
-		
-		
 	}
 
 	public void stateChanged(final VirtualMachine vm, State oldState, State newState) {
