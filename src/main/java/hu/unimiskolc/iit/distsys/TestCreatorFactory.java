@@ -44,10 +44,9 @@ public class TestCreatorFactory {
 		return (FillInAllPMs) Class.forName(System.getProperty("hu.unimiskolc.iit.distsys.PMFiller")).newInstance();
 	}
 
-	public static CloudProvider getNewProvider()
-			throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-		return (CloudProvider) Class.forName(System.getProperty("hu.unimiskolc.iit.distsys.CustomCloudProvider"))
-				.newInstance();
+	public static CloudProvider getNewProvider() throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+		System.setProperty("hu.unimiskolc.iit.distsys.CustomCloudProvider","hu.unimiskolc.iit.distsys.CustomCloudProvider");
+		return (CloudProvider) Class.forName(System.getProperty("hu.unimiskolc.iit.distsys.CustomCloudProvider")).newInstance();
 	}
 
 }
