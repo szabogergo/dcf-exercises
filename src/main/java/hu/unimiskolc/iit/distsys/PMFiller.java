@@ -278,9 +278,7 @@ public class PMFiller implements FillInAllPMs{
 								
 			}
 			
-			// -------------------------------------------------------------------------------------
-			
-			//Timed.simulateUntilLastEvent();
+			// -------------------------------------------------------------------------------------			
 						
 			System.out.println();
 			System.out.println("Physical machines' state: ");
